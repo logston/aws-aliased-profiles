@@ -4,11 +4,10 @@ Issue:
 
 - You have a bunch of accounts in an organization and you want 
 
+```
+aws-aliased-profiles fetch -masterProfile root -accountRole Production
+```
 
-aws --profile master organizations list-accounts > list-accounts.json
-
-For each ID:
-	aws iam list-account-aliases into a file
 
 Build map of Id's to aliases
 
