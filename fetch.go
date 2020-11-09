@@ -162,7 +162,7 @@ func NewCtx() context.Context {
 }
 
 func WriteAccountList(al []*Account) {
-	bytes, err := json.MarshalIndent(al, "", "    ")
+	data, err := json.MarshalIndent(al, "", "    ")
 	if err != nil {
 		ExitWithError(err)
 	}
@@ -174,7 +174,27 @@ func WriteAccountList(al []*Account) {
 
 	path := strings.Join([]string{home, ".aws", AccountsAliasedJsonFilename}, string(os.PathSeparator))
 
-	if err := ioutil.WriteFile(path, bytes, 0644); err != nil {
+	if err := ioutil.WriteFile(path, data, 0644); err != nil {
 		ExitWithError(err)
 	}
+}
+
+func ReadAccountList() (al []*Account) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		ExitWithError(err)
+	}
+
+	path := strings.Join([]string{home, ".aws", AccountsAliasedJsonFilename}, string(os.PathSeparator))
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		ExitWithError(err)
+	}
+
+	if err := json.Unmarshal(data, &al); err != nil {
+		ExitWithError(err)
+	}
+
+	return
 }

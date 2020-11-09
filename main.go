@@ -45,6 +45,9 @@ func ParseArgsAndDispatch() {
 		}
 		FetchAliasToAccountMap(*masterProfile, *accountRole)
 
+	case "upsert":
+		UpsertAWSConfig()
+
 	default:
 		fmt.Println("Expected subcommands")
 		os.Exit(1)
