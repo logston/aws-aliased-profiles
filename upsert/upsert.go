@@ -1,4 +1,4 @@
-package main
+package upsert
 
 import (
 	"bytes"
@@ -7,12 +7,14 @@ import (
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/logston/aws-aliased-profiles/common"
 )
 
-func UpsertAWSConfig() {
+func AWSConfig() {
 	t := GetProfileTemplate()
 
-	al := ReadAccountList()
+	al := common.ReadAccountList()
 
 	profiles := GetProfileBuffer(t, al)
 
@@ -26,35 +28,32 @@ func UpsertAWSConfig() {
 func GetProfileTemplate() *template.Template {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		ExitWithError(err)
+		common.ExitWithError(err)
 	}
 
-	path := strings.Join([]string{home, ".aws", AccountsAliasedConfigFilename}, string(os.PathSeparator))
+	path := strings.Join([]string{home, ".aws", common.AccountsAliasedConfigFilename}, string(os.PathSeparator))
 
 	t, err := template.New("aliased-accounts.tmpl").ParseFiles(path)
 	if err != nil {
 		fmt.Printf("Looks like there is no template at '%s'\nHere's an example of what to place there...\n", path)
-		fmt.Println(DefaultProfileTemplate)
+		fmt.Println(common.DefaultProfileTemplate)
 		os.Exit(1)
 	}
 
 	return t
 }
 
-func GetProfileBuffer(t *template.Template, al []*Account) string {
+func GetProfileBuffer(t *template.Template, al []*common.Account) string {
 	var b bytes.Buffer
 
 	for _, a := range al {
-		if a.Alias == "" {
-			continue
-		}
 		err := t.Execute(&b, a)
 		if err != nil {
-			ExitWithError(err)
+			common.ExitWithError(err)
 		}
 		_, err = b.WriteString("\n")
 		if err != nil {
-			ExitWithError(err)
+			common.ExitWithError(err)
 		}
 	}
 
@@ -64,14 +63,14 @@ func GetProfileBuffer(t *template.Template, al []*Account) string {
 func ReadAWSConfig() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		ExitWithError(err)
+		common.ExitWithError(err)
 	}
 
-	path := strings.Join([]string{home, ".aws", AWSConfigFilename}, string(os.PathSeparator))
+	path := strings.Join([]string{home, ".aws", common.AWSConfigFilename}, string(os.PathSeparator))
 
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
-		ExitWithError(err)
+		common.ExitWithError(err)
 	}
 
 	return string(buf)
@@ -80,29 +79,29 @@ func ReadAWSConfig() string {
 func WriteAWSConfig(config string) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		ExitWithError(err)
+		common.ExitWithError(err)
 	}
 
-	path := strings.Join([]string{home, ".aws", AWSConfigFilename}, string(os.PathSeparator))
+	path := strings.Join([]string{home, ".aws", common.AWSConfigFilename}, string(os.PathSeparator))
 
 	err = ioutil.WriteFile(path, []byte(config), 0644)
 	if err != nil {
-		ExitWithError(err)
+		common.ExitWithError(err)
 	}
 }
 
 func InsertProfiles(config, profiles string) string {
 	// If the delimiter is not in the config file, append it.
-	if !strings.Contains(config, AWSConfigDelimiter) {
+	if !strings.Contains(config, common.AWSConfigDelimiter) {
 		config = strings.Join(
-			[]string{config, AWSConfigDelimiter, AWSConfigDelimiter},
+			[]string{config, common.AWSConfigDelimiter, common.AWSConfigDelimiter},
 			"\n",
 		)
 	}
 
-	parts := strings.Split(config, AWSConfigDelimiter)
+	parts := strings.Split(config, common.AWSConfigDelimiter)
 	if len(parts) != 3 {
-		ExitWithError(fmt.Errorf("Unexpected number of parts after configuration split"))
+		common.ExitWithError(fmt.Errorf("Unexpected number of parts after configuration split"))
 	}
 
 	// Add well defined amounts of padding around profiles section
@@ -111,7 +110,7 @@ func InsertProfiles(config, profiles string) string {
 		"\n" + strings.Trim(profiles, " \n") + "\n",
 		"\n\n" + strings.Trim(parts[2], " \n"),
 	}
-	config = strings.Join(parts, AWSConfigDelimiter)
+	config = strings.Join(parts, common.AWSConfigDelimiter)
 
 	return config
 }
