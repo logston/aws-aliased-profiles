@@ -21,6 +21,11 @@ source_profile = default
 	AWSConfigDelimiter = "### ----- AWS Aliased Profiles -----"
 )
 
+type Tag struct {
+	Key   string
+	Value string
+}
+
 type Account struct {
 	// The unique identifier (ID) of the account.
 	//
@@ -36,6 +41,8 @@ type Account struct {
 
 	// Alias associated with the account.
 	Alias string
+
+	Tags []*Tag
 }
 
 func ExitWithError(err error) {
