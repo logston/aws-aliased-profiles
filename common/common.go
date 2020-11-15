@@ -14,9 +14,23 @@ const (
 	AccountsAliasedConfigFilename = "aliased-accounts.tmpl"
 	AWSConfigFilename             = "config"
 	DefaultProfileTemplate        = `
-[profile {{ .Alias }}]
-role_arn = arn:aws:iam::{{ .Id }}:role/MyFavRoleToAssume
+{{- define "profileBody" }}
+cli_pager=
 source_profile = default
+{{- if .HasTagKeyValue "environment" "staging" }}
+role_arn = arn:aws:iam::{{ .Id }}:role/Staging
+{{ else }}
+role_arn = arn:aws:iam::{{ .Id }}:role/Production
+{{ end -}}
+{{ end -}}
+
+[profile {{ .Id }}]
+{{- template "profileBody" . -}}
+
+{{- if .Alias }}
+[profile {{ .Alias }}]
+{{- template "profileBody" . -}}
+{{ end -}}
 `
 	AWSConfigDelimiter = "### ----- AWS Aliased Profiles -----"
 )
@@ -43,6 +57,16 @@ type Account struct {
 	Alias string
 
 	Tags []*Tag
+}
+
+func (a *Account) HasTagKeyValue(key, value string) bool {
+	for _, t := range a.Tags {
+		if t.Key == key && t.Value == value {
+			return true
+		}
+	}
+
+	return false
 }
 
 func ExitWithError(err error) {
