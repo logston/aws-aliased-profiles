@@ -26,17 +26,11 @@ func AWSConfig() {
 }
 
 func GetProfileTemplate() *template.Template {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		common.ExitWithError(err)
-	}
+	path := common.GetAPPath(common.ConfigFilename)
 
-	path := strings.Join([]string{home, ".aws", common.AccountsAliasedConfigFilename}, string(os.PathSeparator))
-
-	t, err := template.New("aliased-accounts.tmpl").ParseFiles(path)
+	t, err := template.New(common.ConfigFilename).ParseFiles(path)
 	if err != nil {
-		fmt.Printf("Looks like there is no template at '%s'\nHere's an example of what to place there...\n", path)
-		fmt.Println(common.DefaultProfileTemplate)
+		fmt.Printf("Looks like there is no template at '%s'\nPlease run 'aws-aliased-profiles init' to get started.", path)
 		os.Exit(1)
 	}
 
@@ -61,12 +55,7 @@ func GetProfileBuffer(t *template.Template, al []*common.Account) string {
 }
 
 func ReadAWSConfig() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		common.ExitWithError(err)
-	}
-
-	path := strings.Join([]string{home, ".aws", common.AWSConfigFilename}, string(os.PathSeparator))
+	path := common.GetAWSPath(common.AWSConfigFilename)
 
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -77,14 +66,9 @@ func ReadAWSConfig() string {
 }
 
 func WriteAWSConfig(config string) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		common.ExitWithError(err)
-	}
+	path := common.GetAWSPath(common.AWSConfigFilename)
 
-	path := strings.Join([]string{home, ".aws", common.AWSConfigFilename}, string(os.PathSeparator))
-
-	err = ioutil.WriteFile(path, []byte(config), 0644)
+	err := ioutil.WriteFile(path, []byte(config), 0644)
 	if err != nil {
 		common.ExitWithError(err)
 	}

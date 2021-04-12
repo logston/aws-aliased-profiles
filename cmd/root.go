@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/logston/aws-aliased-profiles/defaults"
 	"github.com/logston/aws-aliased-profiles/fetch"
 	"github.com/logston/aws-aliased-profiles/upsert"
 )
@@ -13,6 +14,14 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "aws-aliased-profiles [command]",
 	Short: "quickly update your aws config with all your OU accounts' aliases",
+}
+
+var initCmd = &cobra.Command{
+	Use:   "set-defaults",
+	Short: "set-defaults ~/.aws/aliased-profiles/config.tpml",
+	Run: func(cmd *cobra.Command, args []string) {
+		defaults.InitProfileTemplate()
+	},
 }
 
 var fetchCmd = &cobra.Command{
@@ -47,6 +56,7 @@ func Execute() {
 	rootCmd.AddCommand(
 		fetchCmd,
 		upsertCmd,
+		initCmd,
 	)
 
 	if err := rootCmd.Execute(); err != nil {

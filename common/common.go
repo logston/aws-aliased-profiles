@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -10,10 +9,11 @@ import (
 )
 
 const (
-	AccountsAliasedJsonFilename   = "aliased-accounts.json"
-	AccountsAliasedConfigFilename = "aliased-accounts.tmpl"
-	AWSConfigFilename             = "config"
-	DefaultProfileTemplate        = `
+	DirName                = "aliased-profiles"
+	StateFilename          = "state.json"
+	ConfigFilename         = "config.tmpl"
+	AWSConfigFilename      = "config"
+	DefaultProfileTemplate = `
 {{- define "profileBody" }}
 cli_pager=
 source_profile = default
@@ -70,8 +70,9 @@ func (a *Account) HasTagKeyValue(key, value string) bool {
 }
 
 func ExitWithError(err error) {
-	fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func WriteAccountList(al []*Account) {
@@ -80,12 +81,7 @@ func WriteAccountList(al []*Account) {
 		ExitWithError(err)
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		ExitWithError(err)
-	}
-
-	path := strings.Join([]string{home, ".aws", AccountsAliasedJsonFilename}, string(os.PathSeparator))
+	path := GetAPPath(StateFilename)
 
 	if err := ioutil.WriteFile(path, data, 0644); err != nil {
 		ExitWithError(err)
@@ -93,12 +89,7 @@ func WriteAccountList(al []*Account) {
 }
 
 func ReadAccountList() (al []*Account) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		ExitWithError(err)
-	}
-
-	path := strings.Join([]string{home, ".aws", AccountsAliasedJsonFilename}, string(os.PathSeparator))
+	path := GetAPPath(StateFilename)
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -110,4 +101,27 @@ func ReadAccountList() (al []*Account) {
 	}
 
 	return
+}
+
+func GetAWSPath(files ...string) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		ExitWithError(err)
+	}
+
+	parts := []string{home, ".aws"}
+	for _, file := range files {
+		parts = append(parts, file)
+	}
+
+	return strings.Join(parts, string(os.PathSeparator))
+}
+
+func GetAPPath(files ...string) string {
+	parts := []string{DirName}
+	for _, file := range files {
+		parts = append(parts, file)
+	}
+
+	return GetAWSPath(parts...)
 }
