@@ -1,10 +1,13 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -67,6 +70,26 @@ func (a *Account) HasTagKeyValue(key, value string) bool {
 	}
 
 	return false
+}
+
+func NewCtx() context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		sCh := make(chan os.Signal, 1)
+		signal.Notify(sCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sCh
+		cancel()
+	}()
+	return ctx
+}
+
+func CheckContext(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return nil
+	}
 }
 
 func ExitWithError(err error) {

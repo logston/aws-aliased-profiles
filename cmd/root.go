@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/logston/aws-aliased-profiles/common"
 	"github.com/logston/aws-aliased-profiles/defaults"
 	"github.com/logston/aws-aliased-profiles/fetch"
 	"github.com/logston/aws-aliased-profiles/upsert"
@@ -40,7 +41,7 @@ information can be gathered.
 `,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		fetch.AliasToAccountMap(args[0], args[1])
+		fetch.AliasToAccountMap(common.NewCtx(), args[0], args[1])
 	},
 }
 

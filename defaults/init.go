@@ -9,12 +9,15 @@ import (
 )
 
 func InitProfileTemplate() {
-	err := os.Mkdir(common.GetAPPath(), 0755)
-	common.ExitWithError(err)
+	dirPath := common.GetAPPath()
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		err = os.Mkdir(dirPath, 0755)
+		common.ExitWithError(err)
+	}
 
 	path := common.GetAPPath(common.ConfigFilename)
 
-	err = ioutil.WriteFile(path, []byte(common.DefaultProfileTemplate), 0644)
+	err := ioutil.WriteFile(path, []byte(common.DefaultProfileTemplate), 0644)
 	if err != nil {
 		common.ExitWithError(err)
 	}

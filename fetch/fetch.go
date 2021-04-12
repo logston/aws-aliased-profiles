@@ -3,10 +3,7 @@ package fetch
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -22,42 +19,48 @@ import (
 // MaxResults defined by API is 20
 var MaxResults = aws.Int64(int64(20))
 
-func AliasToAccountMap(masterProfile, accountRole string) {
+func AliasToAccountMap(ctx context.Context, masterProfile, accountRole string) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState:       session.SharedConfigEnable,
 		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
 		Profile:                 masterProfile,
 	}))
 
-	oal, err := GetAWSOrganizationsAccounts(sess)
+	oal, err := GetAWSOrganizationsAccounts(ctx, sess)
 	if err != nil {
 		common.ExitWithError(err)
 	}
 
 	al := GetAccounts(oal)
 
-	if err = GetTagsForOU(sess, al); err != nil {
+	if err = GetTagsForOU(ctx, sess, al); err != nil {
 		common.ExitWithError(err)
 	}
 
-	if err = GetAliases(sess, al, accountRole); err != nil {
+	if err = GetAliases(ctx, sess, al, accountRole); err != nil {
 		common.ExitWithError(err)
 	}
 
 	common.WriteAccountList(al)
 }
 
-func GetAWSOrganizationsAccounts(sess client.ConfigProvider) (oal []*organizations.Account, err error) {
+func GetAWSOrganizationsAccounts(ctx context.Context, sess client.ConfigProvider) (oal []*organizations.Account, err error) {
 	svc := organizations.New(sess)
 
 	var o *organizations.ListAccountsOutput
 	var nextToken *string
 	for {
+		if err = common.CheckContext(ctx); err != nil {
+			return nil, err
+		}
+
 		o, err = svc.ListAccounts(&organizations.ListAccountsInput{
 			MaxResults: MaxResults,
 			NextToken:  nextToken,
 		})
 		if err != nil {
+			_, cancel := context.WithCancel(ctx)
+			cancel()
 			return
 		}
 
@@ -86,19 +89,8 @@ func GetAccounts(oal []*organizations.Account) (al []*common.Account) {
 	return
 }
 
-func NewCtx() context.Context {
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		sCh := make(chan os.Signal, 1)
-		signal.Notify(sCh, syscall.SIGINT, syscall.SIGTERM)
-		<-sCh
-		cancel()
-	}()
-	return ctx
-}
-
-func GetAliases(sess client.ConfigProvider, al []*common.Account, accountRole string) (err error) {
-	eg, ctx := errgroup.WithContext(NewCtx())
+func GetAliases(ctx context.Context, sess client.ConfigProvider, al []*common.Account, accountRole string) (err error) {
+	eg, ctx := errgroup.WithContext(ctx)
 
 	// Send a maximum of 20 concurrent requests to AWS at a time.
 	s := make(chan int, 20) // makeshift semaphore
@@ -106,11 +98,15 @@ func GetAliases(sess client.ConfigProvider, al []*common.Account, accountRole st
 		loopA := a
 		s <- i
 		eg.Go(func() error {
-			e := GetAlias(ctx, sess, loopA, accountRole)
+			e := GetAlias(sess, loopA, accountRole)
 			<-s
 			return e
 		})
 		fmt.Printf("\rFetched aliases for %d accounts...", i+1)
+
+		if err = common.CheckContext(ctx); err != nil {
+			return
+		}
 	}
 
 	fmt.Println()
@@ -121,7 +117,7 @@ func GetAliases(sess client.ConfigProvider, al []*common.Account, accountRole st
 	return
 }
 
-func GetAlias(ctx context.Context, sess client.ConfigProvider, a *common.Account, accountRole string) (err error) {
+func GetAlias(sess client.ConfigProvider, a *common.Account, accountRole string) (err error) {
 	roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", a.Id, accountRole)
 	creds := stscreds.NewCredentials(sess, roleArn)
 	svc := iam.New(sess, &aws.Config{Credentials: creds})
@@ -142,8 +138,8 @@ func GetAlias(ctx context.Context, sess client.ConfigProvider, a *common.Account
 	return
 }
 
-func GetTagsForOU(sess client.ConfigProvider, al []*common.Account) (err error) {
-	eg, ctx := errgroup.WithContext(NewCtx())
+func GetTagsForOU(ctx context.Context, sess client.ConfigProvider, al []*common.Account) (err error) {
+	eg, ctx := errgroup.WithContext(ctx)
 
 	// Send a maximum of 1 concurrent requests to AWS at a time. Perhaps one
 	// day, this loop can be used to send more than one request at a time.
@@ -157,6 +153,10 @@ func GetTagsForOU(sess client.ConfigProvider, al []*common.Account) (err error) 
 			return e
 		})
 		fmt.Printf("\rFetched tags for %d accounts...", i+1)
+
+		if err = common.CheckContext(ctx); err != nil {
+			return
+		}
 	}
 
 	fmt.Println()
@@ -174,11 +174,17 @@ func GetTagsForAccount(ctx context.Context, sess client.ConfigProvider, a *commo
 	var nextToken *string
 	var tags []*common.Tag
 	for {
+		if err = common.CheckContext(ctx); err != nil {
+			return
+		}
+
 		o, err = svc.ListTagsForResource(&organizations.ListTagsForResourceInput{
 			ResourceId: &a.Id,
 			NextToken:  nextToken,
 		})
 		if err != nil {
+			_, cancel := context.WithCancel(ctx)
+			cancel()
 			return
 		}
 
