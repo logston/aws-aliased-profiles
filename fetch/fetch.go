@@ -100,8 +100,8 @@ func NewCtx() context.Context {
 func GetAliases(sess client.ConfigProvider, al []*common.Account, accountRole string) (err error) {
 	eg, ctx := errgroup.WithContext(NewCtx())
 
-	// Send a maximum of 20 concurrent requests to AWS at a time
-	s := make(chan int, 20)
+	// Send a maximum of 20 concurrent requests to AWS at a time.
+	s := make(chan int, 20) // makeshift semaphore
 	for i, a := range al {
 		loopA := a
 		s <- i
@@ -147,7 +147,7 @@ func GetTagsForOU(sess client.ConfigProvider, al []*common.Account) (err error) 
 
 	// Send a maximum of 1 concurrent requests to AWS at a time. Perhaps one
 	// day, this loop can be used to send more than one request at a time.
-	s := make(chan int, 1)
+	s := make(chan int, 1) // makeshift semaphore
 	for i, a := range al {
 		loopA := a
 		s <- i

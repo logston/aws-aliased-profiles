@@ -17,8 +17,8 @@ var rootCmd = &cobra.Command{
 }
 
 var initCmd = &cobra.Command{
-	Use:   "set-defaults",
-	Short: "set-defaults ~/.aws/aliased-profiles/config.tpml",
+	Use:   "init",
+	Short: "init ~/.aws/aliased-profiles/config.tpml",
 	Run: func(cmd *cobra.Command, args []string) {
 		defaults.InitProfileTemplate()
 	},
