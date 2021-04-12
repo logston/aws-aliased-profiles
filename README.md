@@ -10,6 +10,10 @@ the profiles necessary into your config file.
 
 ### Installation
 
+```sh
+go get github.com/logston/aws-aliased-profiles
+```
+
 
 ### Usage
 
@@ -38,7 +42,7 @@ the profiles necessary into your config file.
     their own style.
 
 1. The upsert command uses the downloaded account IDs and aliases to build new
-profiles and insert them into the ~/.aws/config file.
+   profiles and insert them into the `~/.aws/config` file.
 
     ```sh
     aws-aliased-profiles upsert
@@ -56,17 +60,20 @@ profiles and insert them into the ~/.aws/config file.
     source_profile = default
     ```
 
-    After that, you should be able to use all your profiles readily...
+### Day To Day
 
-    ```sh
-    aws --profile staging-123 sts get-caller-identity
-    {
-        "UserId": "ABCDEFGHIJKLMNOP:botocore-session-1234567890",
-        "Account": "987654321",
-        "Arn": "arn:aws:sts::987654321234:assumed-role/MyFavRoleToAssume/botocore-session-1234567890"
-    }
-    ```
+Once run, you should be able to use all your profiles readily...
 
-###### TODO
-- Tests
-- Make sections importable by other packages
+```sh
+aws --profile staging-123 sts get-caller-identity
+{
+    "UserId": "ABCDEFGHIJKLMNOP:botocore-session-1234567890",
+    "Account": "987654321",
+    "Arn": "arn:aws:sts::987654321234:assumed-role/MyFavRoleToAssume/botocore-session-1234567890"
+}
+```
+
+### Timing
+
+Running this program on an organization with 5000 accounts takes about 10
+minutes assuming a high speed internet connection.
