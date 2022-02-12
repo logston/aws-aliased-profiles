@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -92,12 +93,13 @@ func GetAccounts(oal []*organizations.Account) (al []*common.Account) {
 func GetAliases(ctx context.Context, sess client.ConfigProvider, al []*common.Account, accountRole string) (err error) {
 	eg, ctx := errgroup.WithContext(ctx)
 
-	// Send a maximum of 20 concurrent requests to AWS at a time.
-	s := make(chan int, 20) // makeshift semaphore
+	// Send a maximum of 10 concurrent requests to AWS at a time.
+	s := make(chan int, 10) // makeshift semaphore
 	for i, a := range al {
 		loopA := a
 		s <- i
 		eg.Go(func() error {
+			time.Sleep(time.Second) // Slow things down to avoid rate limits.
 			e := GetAlias(sess, loopA, accountRole)
 			<-s
 			return e
