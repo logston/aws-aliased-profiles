@@ -2,7 +2,8 @@ build:
 	go build
 
 install: build
-	rm -rf /usr/local/bin/aws-aliased-profiles
-	cp aws-aliased-profiles /usr/local/bin/
+	mkdir -p ~/.local/bin
+	rm -rf ~/.local/bin/aws-aliased-profiles
+	cp ./aws-aliased-profiles ~/.local/bin/
 
-all: build
+all: install

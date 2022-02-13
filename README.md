@@ -73,6 +73,10 @@ aws --profile staging-123 sts get-caller-identity
 }
 ```
 
+### Development
+
+When developing, please note that `make install` will install to `~/.local/bin/`.
+
 ### Timing
 
 Running this program on an organization with 5000 accounts takes about 10
